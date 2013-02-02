@@ -18,7 +18,7 @@ class ScrobbleException(Exception):
 
 class ScrobbleServer(object):
 
-    def __init__(self, server_name, sk, api_key='thisisthelibreimport2pythonthing'):
+    def __init__(self, server_name, sk, api_key):
         if server_name[:7] != "http://":
             server_name = "http://%s" % (server_name,)
         self.api_key = api_key

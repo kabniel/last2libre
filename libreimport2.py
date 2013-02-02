@@ -99,7 +99,7 @@ def main(server, username, infile, infotype):
     sessionkey = auth(server, username, password)
 
     if infotype == 'scrobbles':
-        scrobbler = ScrobbleServer(server, sessionkey)
+        scrobbler = ScrobbleServer(server, sessionkey, api_key='thisisthelibreimport2pythonthing')
 
         n = 0
         for line in file(infile):
