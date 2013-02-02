@@ -15,12 +15,13 @@
 #
 
 '''
-Import your loved and banned tracks to a gnu fm server.
-Usage: lbimport.py --user=Username --type=loved --file=mylovedtracks.txt [--server=SERVER]
+Submit tracks to a gnu fm server.
+Usage: libreimport2.py --user=Username --type=scrobbles --file=myscrobbles.txt [--server=SERVER]
 
 '''
 
 import json, sys, os, urllib, urllib2, hashlib, getpass, time
+from scrobble2 import ScrobbleServer, ScrobbleTrack
 from optparse import OptionParser
 
 def get_options(parser):
@@ -32,20 +33,20 @@ def get_options(parser):
     parser.add_option("-s", "--server", dest="server", default="libre.fm",
                       help="Server to send tracks to, default is libre.fm")
     parser.add_option("-t", "--type", dest="infotype", default=None,
-                      help="Type of tracks you are about to import, loved or banned.")
+                      help="Type of tracks you are about to import: scrobbles, loved or banned.")
     options, args = parser.parse_args()
 
     if not options.username:
         sys.exit('User name not specified, see --help')
 
-    if not options.infotype in ['loved', 'unloved', 'banned', 'unbanned']:
+    if not options.infotype in ['scrobbles', 'loved', 'unloved', 'banned', 'unbanned']:
         sys.exit('No or invalid type of track specified, see --help')
 
     if not options.infile:
         sys.exit('File with tracks not specified, see --help')
 
     if options.server == 'libre.fm':
-        options.server = 'http://alpha.libre.fm'
+        options.server = 'http://libre.fm'
     else:
         if options.server[:7] != 'http://':
             options.server = 'http://%s' % options.server
@@ -97,15 +98,28 @@ def main(server, username, infile, infotype):
     password = getpass.getpass()
     sessionkey = auth(server, username, password)
 
-    n = 0
-    for line in file(infile):
-        n += 1
-        timestamp, track, artist, album, trackmbid, artistmbid, albummbid = line.strip("\n").split("\t")
-        if submit(server, infotype, artist, track, sessionkey):
-            print "%d: %s %s - %s" % (n, infotype, artist, track)
-        else:
-            print "FAILED: %s - %s" % (artist, track)
-        time.sleep(0.5)
+    if infotype == 'scrobbles':
+        scrobbler = ScrobbleServer(server, sessionkey)
+
+        n = 0
+        for line in file(infile):
+            n = n + 1
+            timestamp, track, artist, album, trackmbid, artistmbid, albummbid = line.strip("\n").split("\t")
+            #submission protocol doesnt specify artist/album mbid, so we dont send them
+            scrobbler.add_track(ScrobbleTrack(timestamp, track, artist, album, trackmbid))
+            print "%d: Adding to post %s playing %s" % (n, artist, track)
+        scrobbler.submit()
+
+    else:
+        n = 0
+        for line in file(infile):
+            n += 1
+            timestamp, track, artist, album, trackmbid, artistmbid, albummbid = line.strip("\n").split("\t")
+            if submit(server, infotype, artist, track, sessionkey):
+                print "%d: %s %s - %s" % (n, infotype, artist, track)
+            else:
+                print "FAILED: %s - %s" % (artist, track)
+            time.sleep(0.5)
  
 if __name__ == '__main__':
     parser = OptionParser()
