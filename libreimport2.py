@@ -56,7 +56,7 @@ def get_options(parser):
 def auth(fmserver, user, password):
     passmd5 = hashlib.md5(password).hexdigest()
     token = hashlib.md5(user+passmd5).hexdigest()
-    getdata = dict(method='auth.getMobileSession', username=user, authToken=token, format='json')
+    getdata = dict(method='auth.getMobileSession', username=user, authToken=token, format='json', api_key='thisisthelibreimport2pythonthing')
     req = fmserver + '/2.0/?' + urllib.urlencode(getdata)
     response = urllib2.urlopen(req)
     try:
@@ -81,7 +81,7 @@ def submit(fmserver, infotype, trackartist, tracktitle, sessionkey):
     else:
         sys.exit('invalid method')
 
-    postdata = dict(method=libremethod, artist=trackartist, track=tracktitle, sk=sessionkey, format='json')
+    postdata = dict(method=libremethod, artist=trackartist, track=tracktitle, sk=sessionkey, format='json', api_key='thisisthelibreimport2pythonthing')
     req = urllib2.Request(fmserver + '/2.0/', urllib.urlencode(postdata))
     response = urllib2.urlopen(req)
     
