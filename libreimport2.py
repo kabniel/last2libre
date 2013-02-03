@@ -34,6 +34,8 @@ def get_options(parser):
                       help="Server to send tracks to, default is libre.fm")
     parser.add_option("-t", "--type", dest="infotype", default=None,
                       help="Type of tracks you are about to import: scrobbles, loved or banned.")
+    parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
+                      help="Debug mode.")
     options, args = parser.parse_args()
 
     if not options.username:
@@ -51,7 +53,7 @@ def get_options(parser):
         if options.server[:7] != 'http://':
             options.server = 'http://%s' % options.server
           
-    return options.server, options.username, options.infile, options.infotype
+    return options.server, options.username, options.infile, options.infotype, options.debug
 
 def auth(fmserver, user, password):
     passmd5 = hashlib.md5(password).hexdigest()
@@ -94,12 +96,12 @@ def submit(fmserver, infotype, trackartist, tracktitle, sessionkey):
     except:
         return False
 
-def main(server, username, infile, infotype):
+def main(server, username, infile, infotype, debug=False):
     password = getpass.getpass()
     sessionkey = auth(server, username, password)
 
     if infotype == 'scrobbles':
-        scrobbler = ScrobbleServer(server, sessionkey, api_key='thisisthelibreimport2pythonthing')
+        scrobbler = ScrobbleServer(server, sessionkey, api_key='thisisthelibreimport2pythonthing', debug=debug)
 
         n = 0
         for line in file(infile):
@@ -123,5 +125,5 @@ def main(server, username, infile, infotype):
  
 if __name__ == '__main__':
     parser = OptionParser()
-    server, username, infile, infotype = get_options(parser)
-    main(server, username, infile, infotype)
+    server, username, infile, infotype, debug = get_options(parser)
+    main(server, username, infile, infotype, debug)

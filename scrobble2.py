@@ -18,7 +18,7 @@ class ScrobbleException(Exception):
 
 class ScrobbleServer(object):
 
-    def __init__(self, server_name, sk, api_key):
+    def __init__(self, server_name, sk, api_key, debug=False):
         if server_name[:7] != "http://":
             server_name = "http://%s" % (server_name,)
         self.api_key = api_key
@@ -26,6 +26,10 @@ class ScrobbleServer(object):
         self.post_data = []
         self.sk = sk
         self.submit_url = server_name + '/2.0/'
+        self.debug = debug
+        self.log = None
+        if debug:
+            self.log = open('response.log', 'w+');
 
     def submit(self, sleep_func=time.sleep):
         if len(self.post_data) == 0:
@@ -47,10 +51,16 @@ class ScrobbleServer(object):
             else:
                 jsonresponse = json.load(response)
 
-                if jsonresponse['scrobbles']: # we're just checking if key exists
+                if jsonresponse.has_key('scrobbles'): # we're just checking if key exists
+                    if self.debug:
+                        for v in jsonresponse['scrobbles']['scrobble']:
+                            self.log.write(str(v)+"\n")
                     break
+                elif jsonresponse.has_key('error'):
+                    last_error = 'Bad server response: %s' % jsonresponse['error']
+                    print '%s, will retry in %ss' % (last_error, timeout)
                 else:
-                    last_error = 'Bad server response: %s' % response
+                    last_error = 'Bad server response: %s' % response.read()
                     print '%s, will retry in %ss' % (last_error, timeout)
             time.sleep(timeout)
         else:
