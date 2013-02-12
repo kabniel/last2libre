@@ -101,7 +101,7 @@ def main(server, username, infile, infotype, debug=False):
     sessionkey = auth(server, username, password)
 
     if infotype == 'scrobbles':
-        scrobbler = ScrobbleServer(server, sessionkey, api_key='thisisthelibreimport2pythonthing', debug=debug)
+        scrobbler = ScrobbleServer(server, sessionkey, api_key='thisisthelibreimport2pythonthing', debug=debug, username=username)
 
         n = 0
         for line in file(infile):
@@ -121,7 +121,7 @@ def main(server, username, infile, infotype, debug=False):
                 print "%d: %s %s - %s" % (n, infotype, artist, track)
             else:
                 print "FAILED: %s - %s" % (artist, track)
-            time.sleep(0.5)
+            time.sleep(0.1)
  
 if __name__ == '__main__':
     parser = OptionParser()

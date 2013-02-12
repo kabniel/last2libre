@@ -18,7 +18,7 @@ class ScrobbleException(Exception):
 
 class ScrobbleServer(object):
 
-    def __init__(self, server_name, sk, api_key, debug=False):
+    def __init__(self, server_name, sk, api_key, debug=False, username=False):
         if server_name[:7] != "http://":
             server_name = "http://%s" % (server_name,)
         self.api_key = api_key
@@ -29,7 +29,7 @@ class ScrobbleServer(object):
         self.debug = debug
         self.log = None
         if debug:
-            self.log = open('response.log', 'w+');
+            self.log = open(username + '.response.log', 'w+');
 
     def submit(self, sleep_func=time.sleep):
         if len(self.post_data) == 0:
@@ -67,7 +67,7 @@ class ScrobbleServer(object):
             raise ScrobbleException('Cannot scrobble after multiple retries. Last error: %s' % last_error)
 
         self.post_data = []
-        sleep_func(1)
+        sleep_func(0.5)
 
     def add_track(self, scrobble_track, sleep_func=time.sleep):
         i = len(self.post_data)
