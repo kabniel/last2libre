@@ -121,7 +121,7 @@ def main(server, username, infile, infotype, debug=False):
                 print "%d: %s %s - %s" % (n, infotype, artist, track)
             else:
                 print "FAILED: %s - %s" % (artist, track)
-            time.sleep(0.1)
+            time.sleep(1)
  
 if __name__ == '__main__':
     parser = OptionParser()

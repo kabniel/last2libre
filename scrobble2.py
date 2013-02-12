@@ -67,7 +67,7 @@ class ScrobbleServer(object):
             raise ScrobbleException('Cannot scrobble after multiple retries. Last error: %s' % last_error)
 
         self.post_data = []
-        sleep_func(0.5)
+        sleep_func(1)
 
     def add_track(self, scrobble_track, sleep_func=time.sleep):
         i = len(self.post_data)
