@@ -1,10 +1,3 @@
-try:
-    import hashlib
-    md5hash = hashlib.md5
-except ImportError:
-    import md5
-    md5hash = md5.new
-from optparse import OptionParser
 import time
 import json
 from urllib import urlencode
@@ -47,7 +40,7 @@ class ScrobbleServer(object):
                 response = urlopen(req)
             except (URLError, HTTPError), e:
                 last_error = str(e)
-                print 'Scrobbling error: %s, will retry in %ss' % (last_error, timeout)
+                print('Scrobbling error: %s, will retry in %ss' % (last_error, timeout))
             else:
                 jsonresponse = json.load(response)
 
@@ -58,10 +51,10 @@ class ScrobbleServer(object):
                     break
                 elif jsonresponse.has_key('error'):
                     last_error = 'Bad server response: %s' % jsonresponse['error']
-                    print '%s, will retry in %ss' % (last_error, timeout)
+                    print('%s, will retry in %ss' % (last_error, timeout))
                 else:
                     last_error = 'Bad server response: %s' % response.read()
-                    print '%s, will retry in %ss' % (last_error, timeout)
+                    print('%s, will retry in %ss' % (last_error, timeout))
             time.sleep(timeout)
         else:
             raise ScrobbleException('Cannot scrobble after multiple retries. Last error: %s' % last_error)
@@ -102,12 +95,3 @@ class ScrobbleTrack(object):
         if self.tracknumber is not None:
             data.append(('tracknumber[%d]' % i, self.tracknumber))
         return data
-
-
-def get_parser(usage):
-    parser = OptionParser(usage=usage)
-    parser.add_option('-s', '--server',
-                      help="Server to submit to.  Defaults to"
-                           " 'libre.fm'.")
-    parser.set_defaults(server='libre.fm')
-    return parser
