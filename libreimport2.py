@@ -25,10 +25,9 @@ from scrobble2 import ScrobbleServer, ScrobbleTrack
 import argparse
 
 class Importer(object):
-    api_key = 'thisisthelibreimport2pythonthing'
 
     def __init__(self):
-        self.parse_args()
+        self.api_key = 'thisisthelibreimport2pythonthing'
 
     def parse_args(self):
         self.parser = argparse.ArgumentParser()
@@ -103,6 +102,7 @@ class Importer(object):
             return False
 
     def run(self):
+        self.parse_args()
         self.password = getpass.getpass()
         self.auth()
     
