@@ -16,114 +16,120 @@
 
 '''
 Submit tracks to a gnu fm server.
-Usage: libreimport2.py --user=Username --type=scrobbles --file=myscrobbles.txt [--server=SERVER]
+Usage: libreimport2.py username --type=scrobbles --file=myscrobbles.txt [--server=SERVER]
 
 '''
 
-import json, sys, os, urllib, urllib2, hashlib, getpass, time
+import json, sys, urllib, urllib2, hashlib, getpass, time
 from scrobble2 import ScrobbleServer, ScrobbleTrack
-from optparse import OptionParser
+import argparse
 
-def get_options(parser):
-    """ Define command line options."""
-    parser.add_option("-u", "--user", dest="username", default=None,
-                      help="User name.")
-    parser.add_option("-f", "--file", dest="infile", default=None,
-                      help="File with tracks to read from.")
-    parser.add_option("-s", "--server", dest="server", default="libre.fm",
-                      help="Server to send tracks to, default is libre.fm")
-    parser.add_option("-t", "--type", dest="infotype", default=None,
-                      help="Type of tracks you are about to import: scrobbles, loved or banned.")
-    parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
-                      help="Debug mode.")
-    options, args = parser.parse_args()
+class Importer(object):
+    api_key = 'thisisthelibreimport2pythonthing'
 
-    if not options.username:
-        sys.exit('User name not specified, see --help')
+    def __init__(self):
+        self.parse_args()
 
-    if not options.infotype in ['scrobbles', 'loved', 'unloved', 'banned', 'unbanned']:
-        sys.exit('No or invalid type of track specified, see --help')
+    def parse_args(self):
+        self.parser = argparse.ArgumentParser()
+        self.parser.add_argument(dest='username', help='User name.')
+        self.parser.add_argument('-f', '--file', dest='infile', default=None, required=True,
+                                 help='File with tracks to read from.')
+        self.parser.add_argument('-s', '--server', dest='server', default='libre.fm',
+                                 help='Server to import data into, default is libre.fm.')
+        self.parser.add_argument('-t', '--type', dest='datatype', default='scrobbles',
+                                 choices=['scrobbles', 'loved', 'banned', 'unloved', 'unbanned'],
+                                 help='Type of data to import: scrobbles, loved or banned.')
+        self.parser.add_argument('-d', '--debug', action='store_true', dest='debug',
+                                 default=False, help='Debug mode.')
 
-    if not options.infile:
-        sys.exit('File with tracks not specified, see --help')
+        self.parser.parse_args(namespace=self)
 
-    if options.server == 'libre.fm':
-        options.server = 'http://libre.fm'
-    else:
-        if options.server[:7] != 'http://':
-            options.server = 'http://%s' % options.server
-          
-    return options.server, options.username, options.infile, options.infotype, options.debug
+        if not 'http' in self.server:
+            self.server = 'http://' + self.server
 
-def auth(fmserver, user, password):
-    passmd5 = hashlib.md5(password).hexdigest()
-    token = hashlib.md5(user+passmd5).hexdigest()
-    getdata = dict(method='auth.getMobileSession', username=user, authToken=token, format='json', api_key='thisisthelibreimport2pythonthing')
-    req = fmserver + '/2.0/?' + urllib.urlencode(getdata)
-    response = urllib2.urlopen(req)
-    try:
-        jsonresponse = json.load(response)
-        sessionkey = jsonresponse['session']['key']
-    except:
-        print jsonresponse
-        sys.exit(1)
 
-    return sessionkey
-
-def submit(fmserver, infotype, trackartist, tracktitle, sessionkey):
-
-    if infotype == 'loved':
-        libremethod = 'track.love'
-    elif infotype == 'unloved':
-        libremethod = 'track.unlove'
-    elif infotype == 'banned':
-        libremethod = 'track.ban'
-    elif infotype == 'unbanned':
-        libremethod = 'track.unban'
-    else:
-        sys.exit('invalid method')
-
-    postdata = dict(method=libremethod, artist=trackartist, track=tracktitle, sk=sessionkey, format='json', api_key='thisisthelibreimport2pythonthing')
-    req = urllib2.Request(fmserver + '/2.0/', urllib.urlencode(postdata))
-    response = urllib2.urlopen(req)
+    def auth(self):
+        passmd5 = hashlib.md5(self.password).hexdigest()
+        token = hashlib.md5(self.username+passmd5).hexdigest()
+        getdata = dict(
+            method='auth.getMobileSession',
+            username=self.username,
+            authToken=token,
+            format='json',
+            api_key=self.api_key
+        )
+        req = self.server + '/2.0/?' + urllib.urlencode(getdata)
+        response = urllib2.urlopen(req)
+        try:
+            jsonresponse = json.load(response)
+            self.session_key = jsonresponse['session']['key']
+        except:
+            print(jsonresponse)
+            sys.exit(1)
     
-    try:
-        jsonresponse = json.load(response)
-        status = jsonresponse['lfm']['status']
+    def submit(self, trackartist, tracktitle):
+    
+        if self.datatype == 'loved':
+            libremethod = 'track.love'
+        elif self.datatype == 'unloved':
+            libremethod = 'track.unlove'
+        elif self.datatype == 'banned':
+            libremethod = 'track.ban'
+        elif self.datatype == 'unbanned':
+            libremethod = 'track.unban'
+        else:
+            sys.exit('invalid method')
 
-        if status == "ok":
-            return True
-    except:
-        return False
+        postdata = dict(
+            method=libremethod,
+            artist=trackartist,
+            track=tracktitle,
+            sk=self.session_key,
+            format='json',
+            api_key=self.api_key
+        )
 
-def main(server, username, infile, infotype, debug=False):
-    password = getpass.getpass()
-    sessionkey = auth(server, username, password)
+        req = urllib2.Request(self.server + '/2.0/', urllib.urlencode(postdata))
+        response = urllib2.urlopen(req)
+        
+        try:
+            jsonresponse = json.load(response)
+            status = jsonresponse['lfm']['status']
+    
+            if status == "ok":
+                return True
+        except:
+            return False
 
-    if infotype == 'scrobbles':
-        scrobbler = ScrobbleServer(server, sessionkey, api_key='thisisthelibreimport2pythonthing', debug=debug, username=username)
-
-        n = 0
-        for line in file(infile):
-            n = n + 1
-            timestamp, track, artist, album, trackmbid, artistmbid, albummbid = line.strip("\n").split("\t")
-            #submission protocol doesnt specify artist/album mbid, so we dont send them
-            scrobbler.add_track(ScrobbleTrack(timestamp, track, artist, album, trackmbid))
-            print "%d: Adding to post %s playing %s" % (n, artist, track)
-        scrobbler.submit()
-
-    else:
-        n = 0
-        for line in file(infile):
-            n += 1
-            timestamp, track, artist, album, trackmbid, artistmbid, albummbid = line.strip("\n").split("\t")
-            if submit(server, infotype, artist, track, sessionkey):
-                print "%d: %s %s - %s" % (n, infotype, artist, track)
-            else:
-                print "FAILED: %s - %s" % (artist, track)
-            time.sleep(1)
+    def run(self):
+        self.password = getpass.getpass()
+        self.auth()
+    
+        if self.datatype == 'scrobbles':
+            self.scrobbler = ScrobbleServer(self.server, self.session_key, api_key=self.api_key,
+                                            debug=self.debug, username=self.username)
+    
+            n = 0
+            for line in file(self.infile):
+                n = n + 1
+                timestamp, track, artist, album, trackmbid, artistmbid, albummbid = line.strip("\n").split("\t")
+                #submission protocol doesnt specify artist/album mbid, so we dont send them
+                self.scrobbler.add_track(ScrobbleTrack(timestamp, track, artist, album, trackmbid))
+                print("%d: Adding to post %s playing %s" % (n, artist, track))
+            self.scrobbler.submit()
+    
+        else:
+            n = 0
+            for line in file(self.infile):
+                n += 1
+                timestamp, track, artist, album, trackmbid, artistmbid, albummbid = line.strip("\n").split("\t")
+                if self.submit(artist, track):
+                    print("%d: %s %s - %s" % (n, self.datatype, artist, track))
+                else:
+                    print("FAILED: %s - %s" % (artist, track))
+                time.sleep(1)
  
 if __name__ == '__main__':
-    parser = OptionParser()
-    server, username, infile, infotype, debug = get_options(parser)
-    main(server, username, infile, infotype, debug)
+    app = Importer()
+    app.run()
